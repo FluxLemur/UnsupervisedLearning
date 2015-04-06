@@ -46,25 +46,25 @@ def sparse_autoencoder_cost(theta, visibleSize, hiddenSize, lamb, sparsity, beta
         x = np.mat(x).T
         # forward pass, for activations
         z2, a2, z3, a3 = activations(x, W1, W2, b1, b2)
-
-        #print 'z2, a2, z3, a3', z2.shape, a2.shape, z3.shape, a3.shape
         
         # cost
         cost += 0.5 / m * np.linalg.norm(a3 - x)**2
 
         # calculate gradient
         f3_p = np.multiply(a3, -a3 + 1) # derivative of sigmoid, f(x), is f'(x) = f(x)(1-f(x))
-        #print 'f3_p', f3_p.shape
         d3 = np.multiply((a3 - x), f3_p)
-        #print 'd3', d3.shape
         W2grad += d3.dot(a2.T) / m
         b2grad += d3 / m
 
         f2_p = np.multiply(a2, -a2 + 1)
         d2 = np.multiply(W2.T.dot(d3), f2_p)
-        #print 'f2_p, d2', f2_p.shape, d2.shape
         W1grad += d2.dot(x.T) / m
         b1grad += d2 / m
+
+    # weight penalty
+    cost += lamb / 2 * (np.sum(np.square(W1)) + np.sum(np.square(W2)))
+    W1grad += lamb * W1
+    W2grad += lamb * W2
 
     grad = np.concatenate((W1grad.flatten(), W2grad.flatten(), b1grad.flatten(), b2grad.flatten()))
     return (cost, grad)

@@ -1,7 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-dim = 16
+dim = 9
+np.random.seed(1) # use a seed when comparing different results
 
 def rand_rect():
     (x1, y1) = np.random.random_integers(0, dim-2, 2)
@@ -12,7 +13,7 @@ def rand_rect():
 def area(x1, y1, x2, y2):
     return (x2-x1) * (y2-y1)
 
-def rand_rect_image(empty=True, minarea=0):
+def rand_rect_image(empty=True, minarea=5):
     (x1,y1,x2,y2) = rand_rect()
     while area(x1,y1,x2,y2) < minarea:
         (x1,y1,x2,y2) = rand_rect()
