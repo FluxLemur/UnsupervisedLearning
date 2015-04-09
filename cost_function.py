@@ -7,12 +7,10 @@ def sigmoid(x):
     return x
 
 def calc_activations(x, W1, W2, b1, b2):
-    z2 = W1.dot(x) + b1
-    a2 = sigmoid(z2)
-    z3 = W2.dot(a2) + b2
-    a3 = sigmoid(z3)      # this is the ouput of the autoencoder, h(x)
+    a2 = sigmoid(W1.dot(x) + b1)
+    a3 = sigmoid(W2.dot(a2) + b2)      # this is the ouput of the autoencoder, h(x)
 
-    return z2, a2, z3, a3
+    return a2, a3
 
 def _KL(m1, m2):
     ''' Kullback-Leibler divergence between two Bernoulli random variables with means
@@ -55,42 +53,39 @@ def sparse_autoencoder_cost(theta, visibleSize, hiddenSize, lamb, sparsity, beta
     b2grad = np.zeros(b2.shape)
 
     activations = np.zeros(b1.shape)
-    Z2 = np.zeros((m,) + b1.shape)
-    A2 = np.zeros(Z2.shape)
-    Z3 = np.zeros((m,) + b2.shape)
-    A3 = np.zeros(Z3.shape)
+    A2 = np.zeros((m,) + b1.shape)
+    A3 = np.zeros((m,) + b2.shape)
 
     for i in xrange(m):
         x = np.mat(data[i]).T
 
         # forward pass
-        z2, a2, z3, a3 = calc_activations(x, W1, W2, b1, b2)
-        Z2[i] = z2
-        A2[i] = a2
-        Z3[i] = z3
-        A3[i] = a3
+        A2[i], A3[i] = calc_activations(x, W1, W2, b1, b2)
+        activations += A2[i]
 
-        activations += a2 / m
-
+    activations /= m
     # second loop is required because sparsity gradient term requires all activations
-    for i in xrange(len(data)):
+    for i in xrange(m):
         x = np.mat(data[i]).T
-        z2, a2, z3, a3 = Z2[i], A2[i], Z3[i], A3[i]
+        a2, a3 = A2[i], A3[i]
         cost += 0.5 / m * np.linalg.norm(a3 - x)**2
-
-        # sparsity gradient term
-        s_grad = KL_p(sparsity, activations)
 
         # calculate gradient
         f3_p = np.multiply(a3, -a3 + 1) # derivative of sigmoid, f(x), is f'(x) = f(x)(1-f(x))
         d3 = np.multiply((a3 - x), f3_p)
-        W2grad += d3.dot(a2.T) / m
-        b2grad += d3 / m
+        W2grad += d3.dot(a2.T)
+        b2grad += d3
 
         f2_p = np.multiply(a2, -a2 + 1)
+        s_grad = KL_p(sparsity, activations)  # sparsity gradient term
         d2 = np.multiply(W2.T.dot(d3) + beta * s_grad, f2_p)
-        W1grad += d2.dot(x.T) / m
-        b1grad += d2 / m
+        W1grad += d2.dot(x.T)
+        b1grad += d2
+
+    W2grad /= m
+    b2grad /= m
+    W1grad /= m
+    b1grad /= m
 
     # weight penalty
     cost += lamb / 2 * (np.sum(np.square(W1)) + np.sum(np.square(W2)))

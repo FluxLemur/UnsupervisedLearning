@@ -3,7 +3,7 @@ import numpy as np
 from scipy.optimize import fmin_l_bfgs_b
 from generate_data import gen_data, show_data, dim, show_x
 from initialize_parameters import init_params
-from cost_function import sparse_autoencoder_cost, activations
+from cost_function import sparse_autoencoder_cost, calc_activations
 from numerical_gradient import check_numerical_gradient, compute_numerical_gradient
 from display_network import display_network
 
@@ -14,11 +14,11 @@ visibleSize =   dim*dim     # number of input units
 hiddenSize =    25          # number of hidden units
 sparsity =      0.01        # desired average activation of hidden units
 lamb =          0.0001      # weight decay
-beta =          3           # weight of sparsity penalty term
+beta =          1           # weight of sparsity penalty term
 
 # temporarily for testing backprop algorithm
 #lamb = 0
-beta = 0
+#beta = 0
 
 
 #########
@@ -26,7 +26,6 @@ beta = 0
 #########
 N = 50
 data = gen_data(N)
-start = np.random.randint(0, N-9)
 
 # and initialize network
 theta = init_params(hiddenSize, visibleSize)
@@ -67,26 +66,28 @@ W2 = np.resize(opt_theta[hiddenSize*visibleSize:2*hiddenSize*visibleSize], (visi
 b1 = np.mat(opt_theta[2*hiddenSize*visibleSize:2*hiddenSize*visibleSize+hiddenSize]).T
 b2 = np.mat(opt_theta[2*hiddenSize*visibleSize+hiddenSize:]).T
 
-print 'parameter sizes', np.sum(np.square(W1)), np.sum(np.square(W2))
+#print 'parameter sizes', np.sum(np.square(W1)), np.sum(np.square(W2))
 
-size, dim = W1.shape
-dim = dim**0.5
-display_network(W1, size, dim)
+display_network(W1, len(W1), dim)
 
 
 ########
-# STEP 6: testing
+# STEP 6: training and test set visualization
 ########
-error = 0
+def disp_results(data_set, show=-1):
+    error = 0
+    show_data(data_set[:show])
+    x_hats = []
+    for x in data_set[:show]:
+        x = np.mat(x).T
+        a2, a3 = calc_activations(x, W1, W2, b1, b2)
+        x_hats.append(a3)
+        error += np.linalg.norm(a3 - x)**2
+
+    show_data(x_hats)
+    print 'average error:', np.sqrt(error / len(x_hats))
+
+
+disp_results(data, 20)
 test_set = gen_data(20)
-show_data(test_set)
-
-x_hats = []
-for x in test_set:
-    x = np.mat(x).T
-    z2, a2, z3, a3 = activations(x, W1, W2, b1, b2)
-    x_hats.append(a3)
-    error += np.linalg.norm(a3 - x)**2
-
-show_data(x_hats)
-print 'average error:', np.sqrt(error / len(x_hats))
+disp_results(test_set)
