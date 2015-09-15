@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-dim = 9
+dim = 8
 np.random.seed(1) # use a seed when comparing different results
 
 def rand_rect():
